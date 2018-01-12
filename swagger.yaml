@@ -1,44 +1,135 @@
-const express = require('express'),
-    bodyParser = require('body-parser');
-
-const app = express();
-app.use(bodyParser.json());
-
-const astronauts = require('./astronauts')
-
-
-app.use('/api', astronauts)
-
-app.set('port', (process.env.PORT || 5000));
-
-app.listen(app.get('port'), function() {
-    console.log('Node app is running on port', app.get('port'));
-});
-
-// middleware route to support CORS and preflighted requests
-app.use(function (req, res, next) {
-    // do logging
-    console.log('Something is happening.');
-    //Enabling CORS
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    res.header('Content-Type', 'application/json');
-    if (req.method == 'OPTIONS') {
-        res.header('Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE');
-        return res.status(200).json({});
-    }
-
-    // make sure we go to the next routes
-    next();
-});
-
-// handle invalid requests and internal error
-app.use((req, res, next) => {
-    const err = new Error('Not Found');
-    err.status = 404;
-    next(err);
-});
-app.use((err, req, res, next) => {
-    res.status(err.status || 500);
-    res.json({ error: { message: err.message } });
-});
+swagger: "2.0"
+info:
+  version: 1.0.0
+  title: "trentose2jan12-exam-aleametis"
+  description: API of service to get and set information about astronouts
+  termsOfService: http://swagger.io/terms/
+  contact:
+    name: Swagger API Team
+    email: foo@example.com
+    url: http://madskristensen.net
+  license:
+    name: MIT
+    url: http://github.com/gruntjs/grunt/blob/master/LICENSE-MIT
+host: trentose2jan12-aleametis.herokuapp.com
+basePath: /api
+schemes:
+  - http
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /astronouts:
+    get:
+      description: |
+        Return all the astronouts and can filter the result by lastName
+      operationId: findastronouts
+      parameters:
+        - name: lastName
+          in: query
+          description: tag to filter by lastName
+          required: false
+          type: string
+      responses:
+        200:
+          description: pet response
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/astronout'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      description: Creates a new astronout
+      operationId: addastronout
+      parameters:
+        - name: astronout
+          in: body
+          description: astronout to add to the collection
+          required: true
+          schema:
+            $ref: '#/definitions/Newastronout'
+      responses:
+        200:
+          description: astronout response
+          schema:
+            $ref: '#/definitions/astronout'
+        default:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /astronout/{id}:
+    get:
+      description: Returns a single astronout based on a ID
+      operationId: find astronout by id
+      parameters:
+        - name: id
+          in: path
+          description: ID of astronout to fetch
+          required: true
+          type: string
+      responses:
+        200:
+          description: astronout response
+          schema:
+            $ref: '#/definitions/astronout'
+        404:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      description: modify a single astronout based on the ID supplied
+      operationId: modifyastronout
+      parameters:
+        - name: id
+          in: path
+          description: ID of astronout to modify
+          required: true
+          type: string
+        - name: astronout
+          in: body
+          description: attributes to modify
+          required: true
+          schema:
+            $ref: '#/definitions/Newastronout'
+      responses:
+        200:
+          description: astronout modified
+          schema:
+            $ref: '#/definitions/astronout'
+        404:
+          description: unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+definitions:
+  astronout:
+    allOf:
+      - $ref: '#/definitions/Newastronout'
+      - required:
+        - id
+        properties:
+          id:
+            type: string
+  Newastronout:
+    required:
+      - isInSpace
+    properties:
+      isInSpace:
+        type: boolean
+      firstName:
+        type: string
+      lastName:
+        type: string
+  Error:
+    required:
+      - code
+      - message
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
